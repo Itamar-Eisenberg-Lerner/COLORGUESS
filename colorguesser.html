@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ColorGuesser</title>
+<link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+
+  body {
+    background: #f2f2f2;
+    font-family: 'Raleway', sans-serif;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  /* NAV */
+  nav {
+    background: #fff;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px 24px;
+  }
+  .nav-logo {
+    font-size: 16px;
+    font-weight: 700;
+    color: #111;
+    letter-spacing: 0.5px;
+  }
+
+  /* MAIN */
+  main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem 3rem;
+  }
+
+  /* TITLE */
+  #color-name {
+    font-size: clamp(2.2rem, 7vw, 4rem);
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    text-align: center;
+    margin-bottom: 6px;
+    transition: color 0.06s linear;
+    line-height: 1.1;
+  }
+  #instruction {
+    font-size: 13px;
+    color: #999;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-align: center;
+    margin-bottom: 1.6rem;
+  }
+
+  /* PICKER CONTAINER */
+  .picker-box {
+    background: #fff;
+    border-radius: 14px;
+    padding: 16px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+    width: 100%;
+    max-width: 320px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* SV CANVAS */
+  #sv-canvas {
+    width: 100%;
+    border-radius: 8px;
+    cursor: crosshair;
+    touch-action: none;
+    display: block;
+  }
+
+  /* HUE SLIDER */
+  #hue-slider {
+    width: 100%;
+    height: 18px;
+    border-radius: 9px;
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+    outline: none;
+    border: none;
+    background: linear-gradient(to right,
+      hsl(0,100%,50%),hsl(30,100%,50%),hsl(60,100%,50%),
+      hsl(90,100%,50%),hsl(120,100%,50%),hsl(150,100%,50%),
+      hsl(180,100%,50%),hsl(210,100%,50%),hsl(240,100%,50%),
+      hsl(270,100%,50%),hsl(300,100%,50%),hsl(330,100%,50%),
+      hsl(360,100%,50%));
+  }
+  #hue-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: white;
+    border: 2px solid rgba(0,0,0,0.25);
+    cursor: pointer;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.2);
+  }
+  #hue-slider::-moz-range-thumb {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: white;
+    border: 2px solid rgba(0,0,0,0.25);
+    cursor: pointer;
+  }
+
+  /* HEX DISPLAY */
+  #hex-display {
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: #bbb;
+    letter-spacing: 1px;
+  }
+
+  /* REVEAL BUTTON */
+  #reveal-btn {
+    width: 100%;
+    padding: 13px;
+    border-radius: 8px;
+    border: 2px solid #222;
+    background: transparent;
+    font-family: 'Raleway', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: #222;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: background 0.15s, color 0.15s, transform 0.1s;
+  }
+  #reveal-btn:hover { background: #222; color: #fff; }
+  #reveal-btn:active { transform: scale(0.98); }
+
+  /* RESULT PANEL */
+  #result-panel {
+    display: none;
+    width: 100%;
+    max-width: 320px;
+    margin-top: 16px;
+    background: #fff;
+    border-radius: 14px;
+    padding: 20px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    text-align: center;
+  }
+
+  .score-pct {
+    font-size: 4rem;
+    font-weight: 700;
+    line-height: 1;
+    color: #111;
+  }
+  .score-tag {
+    font-size: 13px;
+    font-weight: 600;
+    color: #888;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+  }
+
+  .swatches {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+  }
+  .sw-item { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .sw-box {
+    width: 56px; height: 56px;
+    border-radius: 12px;
+    border: 1px solid #ddd;
+  }
+  .sw-lbl {
+    font-size: 11px;
+    font-weight: 600;
+    color: #aaa;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .target-name {
+    font-size: 13px;
+    color: #888;
+    font-weight: 600;
+  }
+  .target-name span { color: #333; }
+
+  #next-btn {
+    width: 100%;
+    padding: 13px;
+    border-radius: 8px;
+    border: none;
+    background: #222;
+    font-family: 'Raleway', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: opacity 0.15s, transform 0.1s;
+  }
+  #next-btn:hover { opacity: 0.8; }
+  #next-btn:active { transform: scale(0.98); }
+
+  /* PROGRESS */
+  .progress-row {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 1.4rem;
+    justify-content: center;
+  }
+  .pip {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #ddd;
+    transition: background 0.3s;
+  }
+  .pip.done { background: #888; }
+  .pip.active { background: #222; }
+
+  /* FINAL */
+  #final-screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 10px;
+  }
+  #final-screen h2 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #111;
+  }
+  .final-avg {
+    font-size: 5rem;
+    font-weight: 700;
+    color: #111;
+    line-height: 1;
+  }
+  .final-grade {
+    font-size: 13px;
+    font-weight: 600;
+    color: #aaa;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  #play-again {
+    padding: 13px 48px;
+    border-radius: 8px;
+    border: 2px solid #222;
+    background: transparent;
+    font-family: 'Raleway', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: #222;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+  #play-again:hover { background: #222; color: #fff; }
+
+  /* SCORES HISTORY */
+  .scores-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .score-pill {
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: #f0f0f0;
+    font-size: 12px;
+    font-weight: 600;
+    color: #555;
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="nav-logo">ColorGuesser</span>
+</nav>
+
+<main>
+  <!-- GAME SCREEN -->
+  <div id="game-screen" style="display:flex;flex-direction:column;align-items:center;width:100%;max-width:320px;">
+
+    <div class="progress-row" id="dots"></div>
+
+    <div id="color-name">—</div>
+    <div id="instruction">What is your guess?</div>
+
+    <div class="picker-box">
+      <canvas id="sv-canvas" width="288" height="200"></canvas>
+      <input type="range" id="hue-slider" min="0" max="360" value="0" step="1">
+      <div id="hex-display">#808080</div>
+      <button id="reveal-btn" onclick="reveal()">Reveal</button>
+    </div>
+
+    <div id="result-panel">
+      <div class="score-pct" id="score-pct">—</div>
+      <div class="score-tag" id="score-tag">—</div>
+      <div class="swatches">
+        <div class="sw-item">
+          <div class="sw-box" id="your-sw"></div>
+          <div class="sw-lbl">You</div>
+        </div>
+        <div class="sw-item">
+          <div class="sw-box" id="target-sw"></div>
+          <div class="sw-lbl">Target</div>
+        </div>
+      </div>
+      <div class="target-name">Target was <span id="target-name-lbl">—</span></div>
+      <button id="next-btn" onclick="nextRound()">Next →</button>
+    </div>
+  </div>
+
+  <!-- FINAL SCREEN -->
+  <div id="final-screen">
+    <h2>Game Over</h2>
+    <div class="final-avg" id="final-avg">—</div>
+    <div class="final-grade" id="final-grade">—</div>
+    <div class="scores-row" id="scores-row"></div>
+    <br>
+    <button id="play-again" onclick="initGame()">Play Again</button>
+  </div>
+</main>
+
+<footer style="text-align:center;padding:1.2rem;font-size:12px;color:#aaa;font-weight:600;letter-spacing:0.3px;border-top:1px solid #e0e0e0;background:#fff;">
+  © כל הזכויות שמורות לאיתמר אייזנברג לרנר
+</footer>
+
+<script>
+const COLORS = [
+  // Classic named colors
+  {name:"Coral Red",h:16,s:0.72,v:0.94},
+  {name:"Lavender Blue",h:245,s:0.35,v:0.88},
+  {name:"Olive Green",h:65,s:0.72,v:0.52},
+  {name:"Burgundy Red",h:345,s:0.80,v:0.40},
+  {name:"Teal Blue",h:178,s:0.82,v:0.62},
+  {name:"Mustard Yellow",h:44,s:0.88,v:0.85},
+  {name:"Sage Green",h:105,s:0.38,v:0.68},
+  {name:"Rust Orange",h:18,s:0.85,v:0.72},
+  {name:"Slate Blue",h:210,s:0.28,v:0.55},
+  {name:"Peach Pink",h:22,s:0.42,v:0.98},
+  {name:"Navy Blue",h:225,s:0.80,v:0.30},
+  {name:"Mauve Purple",h:310,s:0.30,v:0.72},
+  {name:"Ochre Yellow",h:40,s:0.85,v:0.78},
+  {name:"Periwinkle Blue",h:230,s:0.50,v:0.85},
+  {name:"Terracotta Orange",h:20,s:0.70,v:0.68},
+  {name:"Mint Green",h:158,s:0.55,v:0.88},
+  {name:"Plum Purple",h:290,s:0.62,v:0.38},
+  {name:"Amber Orange",h:38,s:0.92,v:0.92},
+  {name:"Dusty Rose",h:350,s:0.32,v:0.82},
+  {name:"Forest Green",h:132,s:0.72,v:0.40},
+  {name:"Cobalt Blue",h:222,s:0.92,v:0.68},
+  {name:"Cream White",h:44,s:0.18,v:0.98},
+  {name:"Magenta Pink",h:308,s:0.88,v:0.85},
+  {name:"Khaki Green",h:54,s:0.32,v:0.78},
+  {name:"Indigo Blue",h:248,s:0.80,v:0.45},
+  {name:"Crimson Red",h:355,s:0.88,v:0.72},
+  {name:"Scarlet Red",h:4,s:0.92,v:0.85},
+  {name:"Aqua Blue",h:185,s:0.78,v:0.88},
+  {name:"Maroon Red",h:0,s:0.75,v:0.32},
+  {name:"Lilac Purple",h:278,s:0.32,v:0.88},
+  {name:"Jade Green",h:155,s:0.72,v:0.52},
+  {name:"Tangerine Orange",h:28,s:0.92,v:0.98},
+  {name:"Cerulean Blue",h:200,s:0.82,v:0.80},
+  {name:"Sienna Brown",h:22,s:0.72,v:0.60},
+  {name:"Hot Fuchsia",h:298,s:0.90,v:0.88},
+  {name:"Denim Blue",h:215,s:0.60,v:0.58},
+  {name:"Apricot Orange",h:28,s:0.55,v:0.98},
+  {name:"Viridian Green",h:165,s:0.62,v:0.50},
+  {name:"Carnation Pink",h:342,s:0.55,v:0.92},
+  {name:"Umber Brown",h:28,s:0.55,v:0.42},
+  {name:"Heather Purple",h:275,s:0.28,v:0.70},
+  {name:"Saffron Yellow",h:42,s:0.95,v:0.95},
+  {name:"Claret Red",h:340,s:0.72,v:0.38},
+  {name:"Malachite Green",h:152,s:0.88,v:0.60},
+  {name:"Bronze Brown",h:32,s:0.65,v:0.62},
+  {name:"Dusty Blue",h:210,s:0.38,v:0.68},
+  {name:"Copper Orange",h:22,s:0.68,v:0.75},
+  {name:"Cerise Pink",h:338,s:0.82,v:0.78},
+  {name:"Mulberry Purple",h:318,s:0.60,v:0.50},
+  {name:"Cinnabar Red",h:12,s:0.82,v:0.80},
+  {name:"Aubergine Purple",h:285,s:0.68,v:0.28},
+  {name:"Mahogany Brown",h:20,s:0.72,v:0.40},
+  {name:"Powder Blue",h:208,s:0.32,v:0.90},
+  {name:"Chestnut Brown",h:18,s:0.65,v:0.45},
+  {name:"Verdigris Green",h:170,s:0.55,v:0.62},
+  {name:"Cinnamon Brown",h:28,s:0.78,v:0.68},
+  {name:"Wisteria Purple",h:282,s:0.42,v:0.78},
+  {name:"Celadon Green",h:148,s:0.32,v:0.82},
+  {name:"Carmine Red",h:352,s:0.90,v:0.62},
+  {name:"Seafoam Green",h:162,s:0.45,v:0.85},
+  {name:"Topaz Yellow",h:35,s:0.72,v:0.88},
+  {name:"Garnet Red",h:348,s:0.78,v:0.42},
+  {name:"Lapis Blue",h:222,s:0.85,v:0.52},
+  {name:"Jasper Orange",h:8,s:0.62,v:0.68},
+  {name:"Alizarin Red",h:356,s:0.85,v:0.75},
+  {name:"Spruce Green",h:155,s:0.55,v:0.38},
+  {name:"Walnut Brown",h:26,s:0.60,v:0.38},
+  {name:"Glacier Blue",h:202,s:0.35,v:0.85},
+  {name:"Sorrel Orange",h:22,s:0.58,v:0.65},
+  {name:"Wenge Brown",h:25,s:0.42,v:0.25},
+  {name:"Zaffre Blue",h:232,s:0.92,v:0.48},
+  // Fun/creative names — always with a color word
+  {name:"Barbie Pink",h:330,s:0.90,v:0.90},
+  {name:"Sassy Green",h:100,s:0.78,v:0.58},
+  {name:"Electric Blue",h:222,s:0.95,v:0.78},
+  {name:"Toxic Green",h:82,s:1.0,v:0.85},
+  {name:"Venom Yellow",h:74,s:1.0,v:0.78},
+  {name:"Baby Blue",h:200,s:0.38,v:0.96},
+  {name:"Cotton Candy Pink",h:310,s:0.35,v:0.96},
+  {name:"Neon Orange",h:24,s:1.0,v:0.98},
+  {name:"Golden Yellow",h:48,s:0.95,v:0.98},
+  {name:"Midnight Blue",h:240,s:0.78,v:0.28},
+  {name:"Bubblegum Pink",h:340,s:0.52,v:0.98},
+  {name:"Jungle Green",h:135,s:0.85,v:0.45},
+  {name:"Candy Red",h:358,s:0.88,v:0.92},
+  {name:"Sky Blue",h:204,s:0.60,v:0.95},
+  {name:"Neon Pink",h:318,s:0.95,v:0.96},
+  {name:"Vintage Brown",h:28,s:0.55,v:0.50},
+  {name:"Desert Orange",h:30,s:0.72,v:0.82},
+  {name:"Ocean Blue",h:210,s:0.88,v:0.72},
+  {name:"Smoky Purple",h:270,s:0.35,v:0.52},
+  {name:"Cherry Red",h:352,s:0.90,v:0.80},
+  {name:"Lime Green",h:78,s:0.92,v:0.88},
+  {name:"Rose Gold",h:18,s:0.40,v:0.88},
+  {name:"Stormy Grey",h:215,s:0.15,v:0.48},
+  {name:"Lemon Yellow",h:56,s:0.90,v:0.98},
+  {name:"Flamingo Pink",h:348,s:0.48,v:0.95},
+  {name:"Moss Green",h:80,s:0.55,v:0.45},
+  {name:"Peacock Blue",h:192,s:0.88,v:0.65},
+  {name:"Butter Yellow",h:52,s:0.55,v:0.98},
+  {name:"Vampire Red",h:0,s:0.90,v:0.38},
+  {name:"Arctic Blue",h:196,s:0.48,v:0.92}
+];
+
+let roundColors=[], roundIdx=0, scores=[], hue=0, sat=0.5, val=0.5, isDragging=false;
+const canvas=document.getElementById('sv-canvas');
+const ctx=canvas.getContext('2d');
+const slider=document.getElementById('hue-slider');
+const nameEl=document.getElementById('color-name');
+
+function hsvToRgb(h,s,v){
+  let r,g,b,i=Math.floor(h/60)%6,f=h/60-Math.floor(h/60),p=v*(1-s),q=v*(1-f*s),t=v*(1-(1-f)*s);
+  if(i===0){r=v;g=t;b=p;}else if(i===1){r=q;g=v;b=p;}else if(i===2){r=p;g=v;b=t;}
+  else if(i===3){r=p;g=q;b=v;}else if(i===4){r=t;g=p;b=v;}else{r=v;g=p;b=q;}
+  return[Math.round(r*255),Math.round(g*255),Math.round(b*255)];
+}
+function rgbToHex(r,g,b){return'#'+[r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('');}
+
+function drawSV(){
+  const W=canvas.width,H=canvas.height;
+  const[hr,hg,hb]=hsvToRgb(hue,1,1);
+  const wg=ctx.createLinearGradient(0,0,W,0);
+  wg.addColorStop(0,'white');wg.addColorStop(1,`rgb(${hr},${hg},${hb})`);
+  ctx.fillStyle=wg;ctx.fillRect(0,0,W,H);
+  const bg=ctx.createLinearGradient(0,0,0,H);
+  bg.addColorStop(0,'rgba(0,0,0,0)');bg.addColorStop(1,'black');
+  ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+  const cx=sat*W,cy=(1-val)*H;
+  ctx.beginPath();ctx.arc(cx,cy,10,0,Math.PI*2);ctx.strokeStyle='white';ctx.lineWidth=3;ctx.stroke();
+  ctx.beginPath();ctx.arc(cx,cy,8,0,Math.PI*2);ctx.strokeStyle='rgba(0,0,0,0.3)';ctx.lineWidth=1.5;ctx.stroke();
+}
+function getHex(){const[r,g,b]=hsvToRgb(hue,sat,val);return rgbToHex(r,g,b);}
+function updateAll(){drawSV();nameEl.style.color=getHex().replace('#','').length===6?getHex():'#888';document.getElementById('hex-display').textContent=getHex().toUpperCase();}
+
+function pickCanvas(e){
+  const rect=canvas.getBoundingClientRect();
+  const cx=e.touches?e.touches[0].clientX:e.clientX;
+  const cy=e.touches?e.touches[0].clientY:e.clientY;
+  sat=Math.max(0,Math.min(1,(cx-rect.left)/rect.width));
+  val=Math.max(0,Math.min(1,1-(cy-rect.top)/rect.height));
+  updateAll();
+}
+canvas.addEventListener('mousedown',e=>{isDragging=true;pickCanvas(e);});
+window.addEventListener('mouseup',()=>isDragging=false);
+window.addEventListener('mousemove',e=>{if(isDragging)pickCanvas(e);});
+canvas.addEventListener('touchstart',e=>{e.preventDefault();pickCanvas(e);},{passive:false});
+canvas.addEventListener('touchmove',e=>{e.preventDefault();pickCanvas(e);},{passive:false});
+slider.addEventListener('input',()=>{hue=parseInt(slider.value);updateAll();});
+
+function updateDots(){
+  const d=document.getElementById('dots');
+  d.innerHTML='';
+  for(let i=0;i<5;i++){
+    const el=document.createElement('div');
+    el.className='pip'+(i<roundIdx?' done':i===roundIdx?' active':'');
+    d.appendChild(el);
+  }
+}
+
+function reveal(){
+  const c=roundColors[roundIdx];
+  const[ur,ug,ub]=hsvToRgb(hue,sat,val);
+  const[tr,tg,tb]=hsvToRgb(c.h,c.s,c.v);
+  const dist=Math.sqrt((ur-tr)**2+(ug-tg)**2+(ub-tb)**2);
+  const score=Math.round((1-dist/Math.sqrt(3*255**2))*100);
+  scores.push(score);
+  const tag=score>=90?'🎯 Legendary':score>=75?'🔥 Sharp eye':score>=55?'👀 Close':score>=35?'😬 Off':'💀 Way off';
+  document.getElementById('score-pct').textContent=score+'%';
+  document.getElementById('score-tag').textContent=tag;
+  document.getElementById('your-sw').style.background=rgbToHex(ur,ug,ub);
+  document.getElementById('target-sw').style.background=rgbToHex(tr,tg,tb);
+  document.getElementById('target-name-lbl').textContent=c.name+' ('+rgbToHex(tr,tg,tb).toUpperCase()+')';
+  document.getElementById('reveal-btn').style.display='none';
+  const rp=document.getElementById('result-panel');
+  rp.style.display='flex';
+  document.getElementById('next-btn').textContent=roundIdx<4?'Next →':'See my score →';
+}
+
+function nextRound(){
+  roundIdx++;
+  if(roundIdx>=5){showFinal();return;}
+  document.getElementById('result-panel').style.display='none';
+  document.getElementById('reveal-btn').style.display='block';
+  sat=0.5;val=0.5;hue=0;slider.value=0;
+  document.getElementById('hdr-round')&&(document.getElementById('hdr-round').textContent=roundIdx+1);
+  nameEl.textContent=roundColors[roundIdx].name;
+  updateDots();updateAll();
+}
+
+function showFinal(){
+  document.getElementById('game-screen').style.display='none';
+  const fs=document.getElementById('final-screen');
+  fs.style.display='flex';
+  const avg=Math.round(scores.reduce((a,b)=>a+b,0)/5);
+  document.getElementById('final-avg').textContent=avg+'%';
+  const grade=avg>=85?'Color Savant 🏆':avg>=70?'Sharp Eye 🎨':avg>=55?'Color Curious 👁️':'Color Newbie 😅';
+  document.getElementById('final-grade').textContent=grade;
+  const sr=document.getElementById('scores-row');
+  sr.innerHTML=scores.map((s,i)=>`<div class="score-pill">#${i+1} — ${s}%</div>`).join('');
+}
+
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+function initGame(){
+  roundColors=shuffle([...COLORS]).slice(0,5);
+  roundIdx=0;scores=[];hue=0;sat=0.5;val=0.5;slider.value=0;
+  document.getElementById('game-screen').style.display='flex';
+  document.getElementById('final-screen').style.display='none';
+  document.getElementById('result-panel').style.display='none';
+  document.getElementById('reveal-btn').style.display='block';
+  nameEl.textContent=roundColors[0].name;
+  updateDots();updateAll();
+}
+
+initGame();
+</script>
+</body>
+</html>
